@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="cs" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Feedback</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Sora:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { font-family: 'Sora', sans-serif; }
+    .font-display { font-family: 'Playfair Display', serif; }
+    .glass-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+    }
+    .glass-card-inner {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+      border-radius: 14px;
+    }
+    /* Luxury slider rating */
+    .slider-group {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .rating-slider {
+      flex: 1; min-width: 200px; height: 6px;
+      background: linear-gradient(90deg, rgba(59,130,246,0.1), rgba(59,130,246,0.2));
+      border-radius: 100px;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.3s ease;
+    }
+    .rating-slider:hover {
+      background: linear-gradient(90deg, rgba(59,130,246,0.15), rgba(59,130,246,0.3));
+    }
+    .rating-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      cursor: pointer;
+      border: 2px solid rgba(96,165,250,0.4);
+      box-shadow: 0 0 20px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.25), inset 0 0 12px rgba(255,255,255,0.15);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .rating-slider::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 32px rgba(59,130,246,0.7), 0 0 60px rgba(59,130,246,0.4), inset 0 0 12px rgba(255,255,255,0.2);
+      transform: scale(1.2);
+      border-color: rgba(96,165,250,0.6);
+    }
+    .rating-slider::-webkit-slider-thumb:active {
+      transform: scale(1.3);
+      box-shadow: 0 0 40px rgba(59,130,246,0.8), 0 0 80px rgba(59,130,246,0.5), inset 0 0 15px rgba(255,255,255,0.25);
+    }
+    .rating-slider::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      cursor: pointer;
+      border: 2px solid rgba(96,165,250,0.4);
+      box-shadow: 0 0 20px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.25), inset 0 0 12px rgba(255,255,255,0.15);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .rating-slider::-moz-range-thumb:hover {
+      box-shadow: 0 0 32px rgba(59,130,246,0.7), 0 0 60px rgba(59,130,246,0.4), inset 0 0 12px rgba(255,255,255,0.2);
+      transform: scale(1.2);
+      border-color: rgba(96,165,250,0.6);
+    }
+    .rating-slider::-moz-range-thumb:active {
+      transform: scale(1.3);
+      box-shadow: 0 0 40px rgba(59,130,246,0.8), 0 0 80px rgba(59,130,246,0.5), inset 0 0 15px rgba(255,255,255,0.25);
+    }
+    .rating-slider::-moz-range-track {
+      background: transparent;
+      border: none;
+    }
+    .rating-value {
+      min-width: 50px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      color: #60a5fa;
+      font-family: 'Sora', sans-serif;
+      letter-spacing: 1px;
+      animation: valueGlow 0.6s ease;
+    }
+    @keyframes valueGlow {
+      0% { color: rgba(96,165,250,0.4); transform: scale(0.9); }
+      50% { color: #60a5fa; transform: scale(1.1); }
+      100% { color: #60a5fa; transform: scale(1); }
+    }
+    .skip-btn {
+      opacity: 0.4; transition: all 0.3s; cursor: pointer; font-size: 11px; letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      padding: 4px 12px; border-radius: 100px; color: rgba(255,255,255,0.5);
+    }
+    .skip-btn:hover { opacity: 0.8; background: rgba(255,255,255,0.08); }
+    .field-skipped { opacity: 0.25; pointer-events: none; position: relative; }
+    .field-skipped .luxury-input,
+    .field-skipped textarea {
+      opacity: 0.3;
+    }
+    .field-skipped::before {
+      content: ''; position: absolute; top: 50%; left: 0; right: 0;
+      height: 1px; background: rgba(255,255,255,0.2);
+      animation: strikeIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      z-index: 1;
+    }
+    @keyframes strikeIn { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+    .field-skipped .skip-btn { cursor: pointer; }
+    .unskip-btn {
+      opacity: 0.5; transition: all 0.3s; cursor: pointer; font-size: 11px; letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      padding: 4px 12px; border-radius: 100px; color: rgba(255,255,255,0.6);
+    }
+    .unskip-btn:hover { opacity: 0.9; background: rgba(255,255,255,0.12); }
+    .toggle-btn {
+      padding: 10px 24px; border-radius: 100px;
+      border: 1px solid rgba(96,165,250,0.2);
+      background: transparent; color: rgba(255,255,255,0.5);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
+      cursor: pointer; font-size: 13px;
+    }
+    .toggle-btn:hover { 
+      border-color: rgba(96,165,250,0.5); 
+      color: rgba(255,255,255,0.8);
+      background: rgba(59,130,246,0.08);
+      box-shadow: 0 0 12px rgba(59,130,246,0.2);
+    }
+    .toggle-btn.active { 
+      background: linear-gradient(135deg, rgba(59,130,246,0.3), rgba(96,165,250,0.2)); 
+      border-color: rgba(96,165,250,0.6); 
+      color: #60a5fa;
+      box-shadow: 0 0 20px rgba(59,130,246,0.4);
+      animation: togglePulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes togglePulse {
+      0% { transform: scale(0.95); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    .luxury-input {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 14px 18px; color: #fff; width: 100%;
+      font-size: 14px; transition: all 0.3s; outline: none;
+    }
+    .luxury-input:focus { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.05); }
+    .luxury-input::placeholder { color: rgba(255,255,255,0.2); }
+    textarea.luxury-input { resize: none; min-height: 100px; }
+    .submit-btn {
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      border: 1px solid rgba(96,165,250,0.4);
+      border-radius: 100px; padding: 18px 48px; color: #fff;
+      font-size: 15px; font-weight: 500; cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); letter-spacing: 0.5px;
+      box-shadow: 0 0 20px rgba(59,130,246,0.3), 0 8px 24px rgba(59,130,246,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.6s ease;
+      z-index: 1;
+    }
+    .submit-btn:hover {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      transform: translateY(-4px);
+      box-shadow: 0 0 40px rgba(59,130,246,0.5), 0 16px 40px rgba(59,130,246,0.3);
+      border-color: rgba(96,165,250,0.6);
+    }
+    .submit-btn:hover::before {
+      left: 100%;
+    }
+    .submit-btn:active {
+      transform: translateY(-1px);
+      box-shadow: 0 0 50px rgba(59,130,246,0.6), 0 8px 24px rgba(59,130,246,0.4);
+    }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .fade-in { animation: fadeIn 0.8s ease forwards; opacity: 0; }
+    @keyframes fadeIn { to { opacity: 1; } }
+    .slide-up { animation: slideUp 0.8s cubic-bezier(0.4,0,0.2,1) forwards; opacity: 0; transform: translateY(30px); }
+    @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+    .glow-orb {
+      position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; opacity: 0.15;
+    }
+    .success-state { display: none; text-align: center; padding: 80px 20px; }
+    .success-state.visible { display: block; }
+    .form-state.hidden { display: none; }
+    .accent-primary { color: #ff6b6b; }
+    .accent-secondary { color: #ffd93d; }
+    .accent-tertiary { color: #6bcf7f; }
+    .accent-quaternary { color: #4ecdc4; }
+    .accent-quinary { color: #a78bfa; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full overflow-auto" style="background: #0a0a0b;">
+  <!-- Ambient orbs -->
+  <div class="glow-orb" style="width:600px;height:600px;background:radial-gradient(circle,#1a1a2e,transparent);top:-200px;right:-200px;"></div>
+  <div class="glow-orb" style="width:400px;height:400px;background:radial-gradient(circle,#16213e,transparent);bottom:-100px;left:-100px;"></div>
+  <div id="app" class="w-full min-h-full" style="background: #0a0a0b;">
+   <!-- Form State -->
+   <div id="formState" class="form-state max-w-2xl mx-auto px-5 py-16 md:py-24">
+    <!-- Hero -->
+    <header class="text-center mb-16 slide-up">
+     <p class="text-xs uppercase tracking-[4px] text-white/30 mb-6">Feedback</p>
+     <h1 id="mainTitle" class="font-display text-3xl md:text-5xl font-600 text-white/90 mb-5 leading-tight">Zpětná vazba ke spolupráci</h1>
+     <p id="subtitle" class="text-white/40 text-sm md:text-base max-w-md mx-auto leading-relaxed">Pomáhá mi vytvářet ještě lepší digitální zkušenosti.</p>
+     <p class="text-white/20 text-xs mt-6 tracking-wide">Vyplnění zabere přibližně 2 minuty.</p>
+    </header><!-- Ratings Section -->
+    <section class="glass-card p-6 md:p-10 mb-6 slide-up" style="animation-delay:0.1s">
+     <h2 class="text-white/60 text-xs uppercase tracking-[3px] mb-8">Hodnocení</h2>
+     <div class="space-y-8" id="ratingsContainer">
+      <div class="rating-group" data-key="overall_rating">
+       <div class="flex justify-between items-center mb-4"><span class="text-white/70 text-sm">Celková spokojenost</span><button class="skip-btn uppercase" onclick="skipRating(this)">Přeskočit</button>
+       </div>
+       <div class="slider-group">
+        <input type="range" min="1" max="10" class="rating-slider" onchange="updateRating(this)" oninput="updateRating(this)"> <span class="rating-value">—</span>
+       </div>
+      </div>
+      <div class="rating-group" data-key="design_rating">
+       <div class="flex justify-between items-center mb-4"><span class="text-white/70 text-sm">Design webu</span><button class="skip-btn uppercase" onclick="skipRating(this)">Přeskočit</button>
+       </div>
+       <div class="slider-group">
+        <input type="range" min="1" max="10" class="rating-slider" onchange="updateRating(this)" oninput="updateRating(this)"> <span class="rating-value">—</span>
+       </div>
+      </div>
+      <div class="rating-group" data-key="communication_rating">
+       <div class="flex justify-between items-center mb-4"><span class="text-white/70 text-sm">Komunikace</span><button class="skip-btn uppercase" onclick="skipRating(this)">Přeskočit</button>
+       </div>
+       <div class="slider-group">
+        <input type="range" min="1" max="10" class="rating-slider" onchange="updateRating(this)" oninput="updateRating(this)"> <span class="rating-value">—</span>
+       </div>
+      </div>
+      <div class="rating-group" data-key="speed_rating">
+       <div class="flex justify-between items-center mb-4"><span class="text-white/70 text-sm">Rychlost dodání</span><button class="skip-btn uppercase" onclick="skipRating(this)">Přeskočit</button>
+       </div>
+       <div class="slider-group">
+        <input type="range" min="1" max="10" class="rating-slider" onchange="updateRating(this)" oninput="updateRating(this)"> <span class="rating-value">—</span>
+       </div>
+      </div>
+      <div class="rating-group" data-key="functionality_rating">
+       <div class="flex justify-between items-center mb-4"><span class="text-white/70 text-sm">Funkčnost webu</span><button class="skip-btn uppercase" onclick="skipRating(this)">Přeskočit</button>
+       </div>
+       <div class="slider-group">
+        <input type="range" min="1" max="10" class="rating-slider" onchange="updateRating(this)" oninput="updateRating(this)"> <span class="rating-value">—</span>
+       </div>
+      </div>
+     </div>
+    </section><!-- Open Questions -->
+    <section class="glass-card p-6 md:p-10 mb-6 slide-up" style="animation-delay:0.2s">
+     <h2 class="text-white/60 text-xs uppercase tracking-[3px] mb-8">Otevřené otázky</h2>
+     <div class="space-y-6">
+      <div class="field-wrapper" data-key="liked_most">
+       <div class="flex justify-between items-center mb-2"><label class="text-white/70 text-sm">Co se vám na spolupráci líbilo nejvíce?</label><button class="skip-btn text-white/40 uppercase" onclick="skipField(this)">Přeskočit</button>
+       </div><textarea class="luxury-input" placeholder="Vaše odpověď..."></textarea>
+      </div>
+      <div class="field-wrapper" data-key="biggest_value">
+       <div class="flex justify-between items-center mb-2"><label class="text-white/70 text-sm">Co pro vás mělo největší hodnotu?</label><button class="skip-btn text-white/40 uppercase" onclick="skipField(this)">Přeskočit</button>
+       </div><textarea class="luxury-input" placeholder="Vaše odpověď..."></textarea>
+      </div>
+      <div class="field-wrapper" data-key="improvement">
+       <div class="flex justify-between items-center mb-2"><label class="text-white/70 text-sm">Co bych mohl zlepšit?</label><button class="skip-btn text-white/40 uppercase" onclick="skipField(this)">Přeskočit</button>
+       </div><textarea class="luxury-input" placeholder="Vaše odpověď..."></textarea>
+      </div>
+     </div>
+    </section><!-- Business Impact -->
+    <section class="glass-card p-6 md:p-10 mb-6 slide-up" style="animation-delay:0.3s">
+     <h2 class="text-white/60 text-xs uppercase tracking-[3px] mb-8">Business Impact</h2>
+     <div class="space-y-8">
+      <div>
+       <p class="text-white/70 text-sm mb-4">Pomohl vám web v podnikání nebo prezentaci?</p>
+       <div class="flex gap-3 flex-wrap" id="businessHelp">
+        <button class="toggle-btn" onclick="selectToggle(this,'businessHelp')">Ano</button> <button class="toggle-btn" onclick="selectToggle(this,'businessHelp')">Částečně</button> <button class="toggle-btn" onclick="selectToggle(this,'businessHelp')">Ne</button>
+       </div>
+      </div>
+      <div>
+       <p class="text-white/70 text-sm mb-4">Splnil web vaše očekávání?</p>
+       <div class="flex gap-3 flex-wrap" id="metExpectations">
+        <button class="toggle-btn" onclick="selectToggle(this,'metExpectations')">Ano</button> <button class="toggle-btn" onclick="selectToggle(this,'metExpectations')">Částečně</button> <button class="toggle-btn" onclick="selectToggle(this,'metExpectations')">Ne</button>
+       </div>
+      </div>
+     </div>
+    </section><!-- Testimonial Consent -->
+    <section class="glass-card p-6 md:p-10 mb-6 slide-up" style="animation-delay:0.35s">
+     <h2 class="text-white/60 text-xs uppercase tracking-[3px] mb-6">Reference</h2>
+     <p class="text-white/70 text-sm mb-4">Můžu použít vaši zpětnou vazbu jako referenci do portfolia?</p>
+     <div class="flex gap-3" id="testimonialConsent">
+      <button class="toggle-btn" onclick="selectToggle(this,'testimonialConsent')">Ano</button> <button class="toggle-btn" onclick="selectToggle(this,'testimonialConsent')">Ne</button>
+     </div>
+    </section><!-- Optional Details -->
+    <section class="glass-card p-6 md:p-10 mb-10 slide-up" style="animation-delay:0.4s">
+     <h2 class="text-white/60 text-xs uppercase tracking-[3px] mb-2">Volitelné údaje</h2>
+     <p class="text-white/20 text-xs mb-8">Žádné pole není povinné.</p>
+     <div class="space-y-5">
+      <div class="field-wrapper" data-key="client_name">
+       <div class="flex justify-between items-center mb-2"><label class="text-white/50 text-xs uppercase tracking-wider">Jméno</label><button class="skip-btn text-white/40 uppercase" onclick="skipField(this)">Přeskočit</button>
+       </div><input type="text" class="luxury-input" placeholder="Jan Novák">
+      </div>
+      <div class="field-wrapper" data-key="client_company">
+       <div class="flex justify-between items-center mb-2"><label class="text-white/50 text-xs uppercase tracking-wider">Firma / projekt</label><button class="skip-btn text-white/40 uppercase" onclick="skipField(this)">Přeskočit</button>
+       </div><input type="text" class="luxury-input" placeholder="Název firmy">
+      </div>
+      <div class="field-wrapper" data-key="client_email">
+       <div class="flex justify-between items-center mb-2"><label class="text-white/50 text-xs uppercase tracking-wider">Email</label><button class="skip-btn text-white/40 uppercase" onclick="skipField(this)">Přeskočit</button>
+       </div><input type="email" class="luxury-input" placeholder="vas@email.cz">
+      </div>
+     </div>
+    </section><!-- Submit -->
+    <div class="text-center slide-up" style="animation-delay:0.5s">
+     <button id="submitBtn" class="submit-btn" onclick="submitFeedback()"> <span id="ctaText">Odeslat zpětnou vazbu</span> <span id="loadingText" class="hidden">Odesílám...</span> </button>
+     <p id="errorMsg" class="text-red-400/70 text-xs mt-4 hidden"></p>
+    </div>
+   </div><!-- Success State -->
+   <div id="successState" class="success-state max-w-2xl mx-auto px-5">
+    <div class="glass-card p-12 md:p-20 fade-in">
+     <div class="text-4xl mb-6">
+      ✦
+     </div>
+     <h2 id="successMsg" class="font-display text-2xl md:text-4xl text-white/90 mb-4">Děkuji za váš čas a důvěru.</h2>
+     <p class="text-white/30 text-sm">Vaše zpětná vazba mi pomůže růst.</p>
+    </div>
+   </div>
+  </div>
+  <script>
+    // State
+    const ratings = {};
+    const skippedFields = new Set();
+    let toggleState = { businessHelp: null, metExpectations: null, testimonialConsent: null };
+
+    function updateRating(slider) {
+      const group = slider.closest('.rating-group');
+      const key = group.dataset.key;
+      const value = slider.value;
+      ratings[key] = parseInt(value);
+      group.querySelector('.rating-value').textContent = value;
+      
+      // Clear skip status when user interacts
+      skippedFields.delete(key);
+      const skipBtn = group.querySelector('.skip-btn');
+      const prevUnbtn = group.querySelector('.unskip-btn');
+      if (prevUnbtn) prevUnbtn.remove();
+      group.classList.remove('field-skipped');
+      if (skipBtn) skipBtn.style.display = 'block';
+    }
+
+    function skipRating(btn) {
+      const group = btn.closest('.rating-group');
+      const key = group.dataset.key;
+      skippedFields.add(key);
+      group.classList.add('field-skipped');
+      btn.remove();
+      
+      // Add unskip button
+      const unsBtn = document.createElement('button');
+      unsBtn.className = 'unskip-btn uppercase';
+      unsBtn.innerHTML = '↺ Vrátit';
+      unsBtn.onclick = () => {
+        skippedFields.delete(key);
+        group.classList.remove('field-skipped');
+        unsBtn.remove();
+        const newSkipBtn = document.createElement('button');
+        newSkipBtn.className = 'skip-btn uppercase';
+        newSkipBtn.innerHTML = 'Přeskočit';
+        newSkipBtn.onclick = function() { skipRating(this); };
+        group.querySelector('.flex').appendChild(newSkipBtn);
+      };
+      group.querySelector('.flex').appendChild(unsBtn);
+    }
+
+    function skipField(btn) {
+      const wrapper = btn.closest('.field-wrapper');
+      const key = wrapper.dataset.key;
+      skippedFields.add(key);
+      wrapper.classList.add('field-skipped');
+      btn.remove();
+      
+      // Add unskip button
+      const unsBtn = document.createElement('button');
+      unsBtn.className = 'unskip-btn uppercase';
+      unsBtn.innerHTML = '↺ Vrátit';
+      unsBtn.onclick = () => {
+        skippedFields.delete(key);
+        wrapper.classList.remove('field-skipped');
+        unsBtn.remove();
+        const newSkipBtn = document.createElement('button');
+        newSkipBtn.className = 'skip-btn uppercase';
+        newSkipBtn.innerHTML = 'Přeskočit';
+        newSkipBtn.onclick = function() { skipField(this); };
+        wrapper.querySelector('.flex').appendChild(newSkipBtn);
+      };
+      wrapper.querySelector('.flex').appendChild(unsBtn);
+    }
+
+    function selectToggle(btn, groupId) {
+      document.querySelectorAll(`#${groupId} .toggle-btn`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      toggleState[groupId] = btn.textContent;
+    }
+
+    async function submitFeedback() {
+      const btn = document.getElementById('submitBtn');
+      const ctaText = document.getElementById('ctaText');
+      const loadingText = document.getElementById('loadingText');
+      const errorMsg = document.getElementById('errorMsg');
+
+      btn.disabled = true;
+      ctaText.classList.add('hidden');
+      loadingText.classList.remove('hidden');
+      errorMsg.classList.add('hidden');
+
+      const getValue = (key) => {
+        if (skippedFields.has(key)) return 'skipped';
+        const wrapper = document.querySelector(`[data-key="${key}"]`);
+        if (!wrapper) return null;
+        const input = wrapper.querySelector('input, textarea');
+        return input ? input.value || '' : null;
+      };
+
+      const data = {
+        overall_rating: skippedFields.has('overall_rating') ? -1 : (ratings.overall_rating || 0),
+        design_rating: skippedFields.has('design_rating') ? -1 : (ratings.design_rating || 0),
+        communication_rating: skippedFields.has('communication_rating') ? -1 : (ratings.communication_rating || 0),
+        speed_rating: skippedFields.has('speed_rating') ? -1 : (ratings.speed_rating || 0),
+        functionality_rating: skippedFields.has('functionality_rating') ? -1 : (ratings.functionality_rating || 0),
+        liked_most: getValue('liked_most') || '',
+        biggest_value: getValue('biggest_value') || '',
+        improvement: getValue('improvement') || '',
+        business_help: toggleState.businessHelp || '',
+        met_expectations: toggleState.metExpectations || '',
+        testimonial_consent: toggleState.testimonialConsent || '',
+        client_name: getValue('client_name') || '',
+        client_company: getValue('client_company') || '',
+        client_email: getValue('client_email') || '',
+        skipped_fields: Array.from(skippedFields).join(','),
+        submitted_at: new Date().toISOString()
+      };
+
+      const result = await window.dataSdk.create(data);
+
+      if (result.isOk) {
+        document.getElementById('formState').classList.add('hidden');
+        const success = document.getElementById('successState');
+        success.classList.add('visible');
+      } else {
+        errorMsg.textContent = 'Něco se pokazilo. Zkuste to prosím znovu.';
+        errorMsg.classList.remove('hidden');
+        btn.disabled = false;
+        ctaText.classList.remove('hidden');
+        loadingText.classList.add('hidden');
+      }
+    }
+
+    // Data SDK init
+    window.dataSdk.init({ onDataChanged() {} });
+
+    // Default config
+    const defaultConfig = {
+      main_title: 'Zpětná vazba ke spolupráci',
+      subtitle: 'Pomáhá mi vytvářet ještě lepší digitální zkušenosti.',
+      cta_text: 'Odeslat zpětnou vazbu',
+      success_message: 'Děkuji za váš čas a důvěru.',
+      background_color: '#0a0a0b',
+      surface_color: '#ffffff08',
+      text_color: '#ffffff',
+      primary_action_color: '#ff6b6b',
+      secondary_action_color: '#ffffff66',
+      font_family: 'Sora',
+      font_size: 14
+    };
+
+    // Element SDK
+    function applyConfig(config) {
+      const c = { ...defaultConfig, ...config };
+      document.getElementById('mainTitle').textContent = c.main_title;
+      document.getElementById('subtitle').textContent = c.subtitle;
+      document.getElementById('ctaText').textContent = c.cta_text;
+      document.getElementById('successMsg').textContent = c.success_message;
+
+      const baseSize = c.font_size || 14;
+      document.querySelectorAll('.text-sm, .luxury-input, .toggle-btn').forEach(el => {
+        el.style.fontSize = `${baseSize}px`;
+      });
+      document.querySelectorAll('h1').forEach(el => {
+        el.style.fontFamily = `${c.font_family}, Playfair Display, serif`;
+        el.style.fontSize = `${baseSize * 2.8}px`;
+      });
+      document.querySelectorAll('h2').forEach(el => {
+        el.style.fontFamily = `${c.font_family}, Sora, sans-serif`;
+      });
+      document.body.style.fontFamily = `${c.font_family}, Sora, sans-serif`;
+      document.body.style.background = c.background_color;
+      document.getElementById('app').style.background = c.background_color;
+    }
+
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (config) => applyConfig(config),
+      mapToCapabilities: (config) => ({
+        recolorables: [
+          { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
+          { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+          { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+          { get: () => config.primary_action_color || defaultConfig.primary_action_color, set: (v) => { config.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); } },
+          { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: (v) => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); } }
+        ],
+        borderables: [],
+        fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
+        fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } }
+      }),
+      mapToEditPanelValues: (config) => new Map([
+        ['main_title', config.main_title || defaultConfig.main_title],
+        ['subtitle', config.subtitle || defaultConfig.subtitle],
+        ['cta_text', config.cta_text || defaultConfig.cta_text],
+        ['success_message', config.success_message || defaultConfig.success_message]
+      ])
+    });
+
+    applyConfig(defaultConfig);
+    lucide.createIcons();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a01b9567ec31d3a6',t:'MTc3OTc4NTk2NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
